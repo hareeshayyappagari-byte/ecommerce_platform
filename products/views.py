@@ -3,6 +3,8 @@ View handlers for products app.
 Handles product listing, searching, filtering, and product detail pages.
 """
 
+import logging
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView
 from django.db.models import Q, Avg, Count
@@ -10,8 +12,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.http import HttpRequest, HttpResponse
 from .models import Product, Category, Review
 from .forms import ReviewForm
+
+logger = logging.getLogger('ecommerce')
 
 
 class ProductListView(ListView):
@@ -107,81 +112,104 @@ class ProductDetailView(DetailView):
 
 
 @login_required
-def add_review(request, sku):
+def add_review(request: HttpRequest, sku: str) -> HttpResponse:
     """
     View to handle adding a review for a product.
     Only authenticated users can add reviews.
     """
-    product = get_object_or_404(Product, sku=sku)
-    
-    # Check if user already reviewed this product
-    existing_review = product.reviews.filter(user=request.user)
-    
-    if request.method == 'POST':
-        form = ReviewForm(request.POST, instance=existing_review.first())
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.product = product
-            review.user = request.user
-            review.save()
-            messages.success(request, 'Your review has been posted successfully!')
-            return redirect('products:product-detail', sku=sku)
-    else:
-        form = ReviewForm(instance=existing_review.first())
-    
-    context = {
-        'form': form,
-        'product': product,
-    }
-    return render(request, 'products/add_review.html', context)
+    try:
+        product = get_object_or_404(Product, sku=sku)
+        existing_review = product.reviews.filter(user=request.user)
+
+        if request.method == 'POST':
+            form = ReviewForm(request.POST, instance=existing_review.first())
+            if form.is_valid():
+                review = form.save(commit=False)
+                review.product = product
+                review.user = request.user
+                review.save()
+                messages.success(request, 'Your review has been posted successfully!')
+                return redirect('products:product-detail', sku=sku)
+        else:
+            form = ReviewForm(instance=existing_review.first())
+
+        context = {
+            'form': form,
+            'product': product,
+        }
+        return render(request, 'products/add_review.html', context)
+
+    except Exception as e:
+        logger.exception('Error in add_review for SKU %s', sku)
+        messages.error(request, 'Something went wrong while submitting your review.')
+        return redirect('products:product-detail', sku=sku)
 
 
-def category_products(request, slug):
+def category_products(request: HttpRequest, slug: str) -> HttpResponse:
     """
     View to display products filtered by category.
     Shows all active products in a specific category.
     """
-    category = get_object_or_404(Category, slug=slug)
-    products = Product.objects.filter(
-        category=category,
-        is_active=True
-    )
-    
-    # Search within category
-    search_query = request.GET.get('q')
-    if search_query:
-        products = products.filter(
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query)
+    try:
+        category = get_object_or_404(Category, slug=slug)
+        products = Product.objects.filter(
+            category=category,
+            is_active=True
         )
-    
-    context = {
-        'category': category,
-        'products': products,
-        'categories': Category.objects.all(),
-    }
-    return render(request, 'products/category_products.html', context)
+
+        search_query = request.GET.get('q')
+        if search_query:
+            products = products.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        context = {
+            'category': category,
+            'products': products,
+            'categories': Category.objects.all(),
+        }
+        return render(request, 'products/category_products.html', context)
+
+    except Exception:
+        logger.exception('Error in category_products slug=%s', slug)
+        return render(request, 'products/category_products.html', {
+            'category': None,
+            'products': Product.objects.none(),
+            'categories': Category.objects.all(),
+            'error_message': 'Failed to load category products.',
+        })
 
 
-def search_products(request):
+def search_products(request: HttpRequest) -> HttpResponse:
     """
     View to handle product search functionality.
     Returns products matching search query across name, description, and SKU.
     """
-    query = request.GET.get('q', '')
-    products = []
-    
-    if query:
-        products = Product.objects.filter(
-            Q(name__icontains=query) |
-            Q(description__icontains=query) |
-            Q(sku__icontains=query),
-            is_active=True
-        )
-    
-    context = {
-        'query': query,
-        'products': products,
-        'categories': Category.objects.all(),
-    }
-    return render(request, 'products/search_results.html', context)
+    try:
+        query = request.GET.get('q', '')
+        products = Product.objects.none()
+
+        if query:
+            products = Product.objects.filter(
+                Q(name__icontains=query) |
+                Q(description__icontains=query) |
+                Q(sku__icontains=query),
+                is_active=True
+            )
+
+        context = {
+            'query': query,
+            'products': products,
+            'categories': Category.objects.all(),
+        }
+        return render(request, 'products/search_results.html', context)
+
+    except Exception:
+        logger.exception('Error in search_products query=%s', request.GET.get('q', ''))
+        return render(request, 'products/search_results.html', {
+            'query': '',
+            'products': Product.objects.none(),
+            'categories': Category.objects.all(),
+            'error_message': 'Search failed, please try again.',
+        })

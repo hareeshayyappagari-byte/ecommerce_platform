@@ -106,3 +106,40 @@ class ReviewModelTest(TestCase):
         review_str = str(self.review)
         self.assertIn("testuser", review_str)
         self.assertIn("5★", review_str)
+
+
+class ProductViewTests(TestCase):
+    """Integration tests for Products views and user flows."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Test Product',
+            description='Test product',
+            sku='TEST-002',
+            category=self.category,
+            price=19.99,
+            stock_quantity=5,
+            is_active=True,
+        )
+
+    def test_product_list_view(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Product')
+
+    def test_search_products_view_found(self):
+        response = self.client.get('/search/', {'q': 'Test'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Product')
+
+    def test_search_products_view_no_match(self):
+        response = self.client.get('/search/', {'q': 'NotExists'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('products', response.context)
+        self.assertEqual(len(response.context['products']), 0)
+
+    def test_category_products_view(self):
+        response = self.client.get(f'/category/{self.category.slug}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Product')

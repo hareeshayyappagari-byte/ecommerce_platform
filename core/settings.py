@@ -12,6 +12,10 @@ from decouple import config, Csv
 # ============================================================================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ensure log directory exists for file logging
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 # ============================================================================
 # SECURITY SETTINGS - Secret key and allowed hosts
 # ============================================================================
@@ -48,6 +52,7 @@ INSTALLED_APPS = [
 # ============================================================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.ExceptionLoggingMiddleware',  # Custom error logging middleware
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Static files serving for production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -180,3 +185,42 @@ SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'ecommerce.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'ecommerce': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

@@ -13,3 +13,10 @@ class CoreConfig(AppConfig):
     """
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'core'
+
+    def ready(self):
+        """Prepare application-wide resources at startup."""
+        import os
+        from pathlib import Path
+        log_dir = Path(__file__).resolve().parent.parent / 'logs'
+        os.makedirs(log_dir, exist_ok=True)

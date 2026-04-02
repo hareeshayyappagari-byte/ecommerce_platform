@@ -116,3 +116,44 @@ class OrderItemTest(TestCase):
         total = self.order_item.get_item_total()
         expected = Decimal("99.99") * 2
         self.assertEqual(total, expected)
+
+
+class OrderViewTest(TestCase):
+    """Integration tests for order views."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='viewuser',
+            email='view@example.com',
+            password='testpass123'
+        )
+        self.category = Category.objects.create(name='Electronics', slug='electronics')
+        self.product = Product.objects.create(
+            name='Test Product',
+            description='Test Description',
+            sku='TEST-02',
+            category=self.category,
+            price=50.00,
+            stock_quantity=5,
+            is_active=True,
+        )
+        self.address = Address.objects.create(
+            user=self.user,
+            address_type='shipping',
+            full_name='John Doe',
+            street_address_line_1='123 Main St',
+            city='City',
+            state='State',
+            postal_code='12345',
+            country='Country',
+            phone_number='+1000000000'
+        )
+
+    def test_order_history_requires_login(self):
+        response = self.client.get('/orders/history/')
+        self.assertEqual(response.status_code, 302)
+
+    def test_order_history_authenticated(self):
+        self.client.login(username='viewuser', password='testpass123')
+        response = self.client.get('/orders/history/')
+        self.assertEqual(response.status_code, 200)
