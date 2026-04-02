@@ -1,0 +1,2 @@
+# Runtime configuration for Python on Render
+python-3.11.6

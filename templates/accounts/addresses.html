@@ -1,0 +1,78 @@
+{% extends 'base/base.html' %}
+
+{% block title %}My Addresses - EShop{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-map-marker"></i> My Addresses</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'accounts:add-address' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Address
+            </a>
+        </div>
+    </div>
+    
+    {% if addresses %}
+    <!-- Addresses Grid -->
+    <div class="row">
+        {% for address in addresses %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-pin"></i> {{ address.get_address_type_display }}
+                        {% if address.is_default %}
+                        <span class="badge bg-success">Default</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>{{ address.full_name }}</strong><br>
+                        {{ address.street_address_line_1 }}<br>
+                        {% if address.street_address_line_2 %}
+                        {{ address.street_address_line_2 }}<br>
+                        {% endif %}
+                        {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+                        {{ address.country }}<br>
+                        <i class="fas fa-phone"></i> {{ address.phone_number }}
+                    </p>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{% url 'accounts:edit-address' address.id %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'accounts:delete-address' address.id %}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        {% if not address.is_default %}
+                        <a href="{% url 'accounts:set-default-address' address.id %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-check"></i> Set Default
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="alert alert-info text-center py-5">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">
+            <i class="fas fa-map-marker"></i>
+        </div>
+        <h4>No Addresses Yet</h4>
+        <p class="mb-3">Add your first address to get started with shipping</p>
+        <a href="{% url 'accounts:add-address' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Address
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

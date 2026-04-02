@@ -1,0 +1,97 @@
+{% extends 'base/base.html' %}
+
+{% block title %}My Profile - EShop{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Page Header -->
+    <h1 class="mb-4"><i class="fas fa-user"></i> My Profile</h1>
+    
+    <div class="row">
+        <!-- Profile Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture -->
+                        <div class="mb-3">
+                            <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Profile Picture</label>
+                            {% if profile.profile_picture %}
+                            <div class="mb-2">
+                                <img src="{{ profile.profile_picture.url }}" alt="Profile" class="rounded" style="max-width: 200px;">
+                            </div>
+                            {% endif %}
+                            {{ form.profile_picture }}
+                        </div>
+                        
+                        <!-- Form Fields -->
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ field.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        
+                        <!-- Save Button -->
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Info Sidebar -->
+        <div class="col-md-4">
+            <!-- Account Info Card -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>Username:</strong> {{ user.username }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Email:</strong> {{ user.email }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Account Type:</strong> {{ profile.get_account_type_display }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Joined:</strong> {{ profile.created_at|date:"M d, Y" }}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Helpful Links -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'orders:history' %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-history"></i> Order History
+                    </a>
+                    <a href="{% url 'accounts:addresses' %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-map-marker"></i> Manage Addresses
+                    </a>
+                    <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
